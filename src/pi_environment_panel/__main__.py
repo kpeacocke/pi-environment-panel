@@ -9,7 +9,7 @@ from .config import load_config
 from .app import PanelApp
 from .layout import build_plan
 from .preview import render_png
-from .epaper import WaveshareUART
+from .epaper import WaveshareUART, frame
 
 
 def _epaper(cfg):

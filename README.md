@@ -220,3 +220,8 @@ This means layout work can be done without repeatedly refreshing the physical di
 - Added `diagnose-epaper` transport diagnostics.
 - WAKE GPIO errors are no longer silently hidden in diagnostic mode.
 - Added raw RX byte reporting and non-destructive host-side baud scan.
+
+## v0.1.2
+
+- Fixed `diagnose-epaper` crashing before UART access because `frame` was not imported into the CLI module.
+- Added a regression test that executes the diagnostic path and verifies the exact documented handshake frame.
