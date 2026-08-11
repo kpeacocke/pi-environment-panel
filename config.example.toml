@@ -1,6 +1,6 @@
 [panel]
 title = "KP PI"
-serial_device = "/dev/serial0"
+serial_device = "/dev/ttyAMA10"
 baud = 115200
 wake_gpio = 4
 reset_gpio = 17

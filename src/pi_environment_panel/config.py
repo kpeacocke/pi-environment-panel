@@ -12,7 +12,7 @@ DEFAULT_CONFIG = Path("/etc/pi-environment-panel/config.toml")
 @dataclass
 class PanelConfig:
     title: str = "KP PI"
-    serial_device: str = "/dev/serial0"
+    serial_device: str = "/dev/ttyAMA10"
     baud: int = 115200
     wake_gpio: int = 4
     reset_gpio: int = 17

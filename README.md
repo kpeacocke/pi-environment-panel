@@ -46,7 +46,7 @@ It deliberately does **not** contain calendar, email, tasks or generic productiv
 
 - One fixed dashboard page
 - Preview as an 800×600 PNG
-- Native Waveshare UART drawing commands on `/dev/serial0`
+- Native Waveshare UART drawing commands on the Raspberry Pi 5 dedicated UART/debug connector (`/dev/ttyAMA10`)
 - SQLite history on NVMe when available
 - systemd daemon for continuous updates
 
@@ -60,11 +60,10 @@ Current known wiring:
 |---|---|
 | Panel VCC | 5V pin 4 |
 | Panel GND | GND |
-| Panel RX/DIN | GPIO14/TX, pin 8 |
-| Panel TX/DOUT | GPIO15/RX, pin 10 |
+| Panel serial | Raspberry Pi 5 dedicated UART/debug connector |
+| UART device | `/dev/ttyAMA10`, 115200 baud |
 | WAKE_UP | GPIO4, pin 7 |
 | RESET | GPIO17, pin 11 |
-| UART | `/dev/serial0`, 115200 baud |
 | UPS HAT (E) | I²C bus 1, address `0x2d` |
 
 ## Install
@@ -225,3 +224,10 @@ This means layout work can be done without repeatedly refreshing the physical di
 
 - Fixed `diagnose-epaper` crashing before UART access because `frame` was not imported into the CLI module.
 - Added a regression test that executes the diagnostic path and verifies the exact documented handshake frame.
+
+## v0.1.3
+
+- Corrected the physical UART target for this Pi 5 build to `/dev/ttyAMA10`.
+- The panel's serial TX/RX are on the Pi 5 dedicated UART/debug connector; the 40-pin header is used for auxiliary GPIO such as WAKE and RESET.
+- `/dev/serial0` is no longer used as the default because this machine currently maps it to `/dev/ttyAMA0` on GPIO14/15, which is not where this panel is physically connected.
+- Verified on the target Pi: the Waveshare handshake on `/dev/ttyAMA10` returned ASCII `OK` (`4F 4B`).

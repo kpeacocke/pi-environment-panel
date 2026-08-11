@@ -143,10 +143,10 @@ def cmd_diagnose_epaper(args):
 
     print("No UART response was received.")
     print("The command bytes are correct, so check the physical transport next:")
-    print("  panel DOUT -> Pi GPIO15/RX (pin 10)")
-    print("  panel DIN  <- Pi GPIO14/TX (pin 8)")
+    print("  panel serial -> Raspberry Pi 5 dedicated UART/debug connector")
+    print("  configured UART device -> /dev/ttyAMA10 for this build")
     print("  common GND")
-    print("  panel VCC 3.3-5.5 V (current wiring uses Pi 5 V)")
+    print("  panel power")
     print("  panel WAKE_UP -> configured GPIO")
     print("Observe whether the module state LED lights when the WAKE attempt runs.")
     raise SystemExit(2)
