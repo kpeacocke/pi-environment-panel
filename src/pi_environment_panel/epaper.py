@@ -60,18 +60,34 @@ class WaveshareUART:
     def __exit__(self, *_):
         self.close()
 
-    def wake(self):
+    def wake(self, strict: bool = False):
+        """Generate the documented rising edge on WAKE_UP.
+
+        Returns (ok, detail).  In normal display operation a wake GPIO failure
+        does not prevent trying the UART because an already-awake panel may
+        still respond.  Diagnostic mode sets strict=True so the actual error is
+        surfaced instead of being hidden.
+        """
+        pin = None
         try:
             from gpiozero import OutputDevice
-            pin = OutputDevice(self.wake_gpio, active_high=True, initial_value=False)
+            pin = OutputDevice(
+                self.wake_gpio,
+                active_high=True,
+                initial_value=False,
+            )
             pin.off()
-            time.sleep(0.05)
-            pin.on()  # documented rising edge
-            time.sleep(0.15)
-            pin.close()
-        except Exception:
-            # The panel may already be awake; handshake remains authoritative.
-            pass
+            time.sleep(0.10)
+            pin.on()  # Waveshare documents a rising edge as the wake event.
+            time.sleep(0.50)
+            return True, f"GPIO{self.wake_gpio} low->high"
+        except Exception as exc:
+            if strict:
+                raise
+            return False, f"{type(exc).__name__}: {exc}"
+        finally:
+            if pin is not None:
+                pin.close()
 
     def reset(self):
         from gpiozero import OutputDevice
@@ -102,6 +118,40 @@ class WaveshareUART:
             if b"OK" in data:
                 return True
         return False
+
+    def read_response(self, seconds: float = 1.5) -> bytes:
+        if self._serial is None:
+            raise RuntimeError("serial device is not open")
+        deadline = time.monotonic() + seconds
+        data = bytearray()
+        while time.monotonic() < deadline:
+            waiting = self._serial.in_waiting
+            if waiting:
+                data.extend(self._serial.read(waiting))
+                # A valid handshake response is ASCII OK. Keep a little margin
+                # to capture any surrounding bytes rather than stopping at O.
+                if b"OK" in data:
+                    time.sleep(0.05)
+                    waiting = self._serial.in_waiting
+                    if waiting:
+                        data.extend(self._serial.read(waiting))
+                    break
+            else:
+                time.sleep(0.02)
+        return bytes(data)
+
+    def raw_handshake(self, wake: bool = True, strict_wake: bool = False):
+        if self._serial is None:
+            raise RuntimeError("serial device is not open")
+        wake_result = (None, "not requested")
+        if wake:
+            wake_result = self.wake(strict=strict_wake)
+        self._serial.reset_input_buffer()
+        tx = frame(0x00)
+        self._serial.write(tx)
+        self._serial.flush()
+        rx = self.read_response(2.0)
+        return tx, rx, wake_result
 
     def clear(self):
         self.send(0x2E, settle=0.08)

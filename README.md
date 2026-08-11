@@ -116,7 +116,18 @@ sudo -u kpeacocke /opt/pi-environment-panel/.venv/bin/pi-panel snapshot
 sudo -u kpeacocke /opt/pi-environment-panel/.venv/bin/pi-panel preview --output /tmp/pi-panel.png
 ```
 
-Then test the UART handshake:
+Then run the transport diagnostic:
+
+```bash
+sudo -u kpeacocke /opt/pi-environment-panel/.venv/bin/pi-panel diagnose-epaper
+```
+
+This prints the resolved UART device, permissions/groups, the exact transmitted
+Waveshare handshake frame, raw received bytes, whether the WAKE GPIO pulse
+actually succeeded, and a non-destructive baud scan. It does not change the
+panel's configured baud rate.
+
+Once diagnostics pass, the shorter probe is:
 
 ```bash
 sudo -u kpeacocke /opt/pi-environment-panel/.venv/bin/pi-panel probe-epaper
@@ -203,3 +214,9 @@ That same plan can be:
 - translated into native e-paper UART commands.
 
 This means layout work can be done without repeatedly refreshing the physical display.
+
+## v0.1.1
+
+- Added `diagnose-epaper` transport diagnostics.
+- WAKE GPIO errors are no longer silently hidden in diagnostic mode.
+- Added raw RX byte reporting and non-destructive host-side baud scan.

@@ -49,6 +49,109 @@ def cmd_probe(args):
     print("e-paper handshake OK")
 
 
+
+def cmd_diagnose_epaper(args):
+    import grp
+    import os
+    import stat
+
+    cfg = load_config(args.config)
+    device = Path(cfg.panel.serial_device)
+
+    print("=== DEVICE ===")
+    print(f"configured: {device}")
+    try:
+        print(f"resolved:   {device.resolve(strict=True)}")
+    except Exception as exc:
+        print(f"resolved:   ERROR: {exc}")
+    try:
+        st = device.stat()
+        print(f"mode:       {stat.filemode(st.st_mode)}")
+        print(f"owner:      uid={st.st_uid} gid={st.st_gid}")
+    except Exception as exc:
+        print(f"stat:       ERROR: {exc}")
+
+    groups = []
+    for gid in os.getgroups():
+        try:
+            groups.append(grp.getgrgid(gid).gr_name)
+        except KeyError:
+            groups.append(str(gid))
+    print(f"groups:     {', '.join(groups)}")
+
+    print()
+    print("=== UART OWNERSHIP ===")
+    cmdline = Path("/proc/cmdline").read_text(errors="ignore").strip()
+    serial_console = [x for x in cmdline.split() if x.startswith("console=serial") or "ttyAMA" in x or "ttyS" in x]
+    print("serial console:", " ".join(serial_console) if serial_console else "none in /proc/cmdline")
+
+    print()
+    print("=== WAVESHARE HANDSHAKE ===")
+    expected = frame(0x00)
+    print("TX expected:", expected.hex(" ").upper())
+    print('Expected response contains ASCII: 4F 4B ("OK")')
+
+    # First try the documented power-on default without touching WAKE. If the
+    # panel is already awake this isolates UART from GPIO.
+    attempts = [
+        (115200, False, "115200 / no WAKE"),
+        (115200, True,  "115200 / WAKE edge"),
+        # These do not change the module baud; they only listen/send the same
+        # handshake at alternate host speeds to find a panel whose baud was
+        # changed earlier in the current power cycle.
+        (9600,   True,  "9600 / WAKE edge"),
+        (57600,  True,  "57600 / WAKE edge"),
+        (38400,  True,  "38400 / WAKE edge"),
+        (19200,  True,  "19200 / WAKE edge"),
+    ]
+
+    found = False
+    for baud, use_wake, label in attempts:
+        panel = WaveshareUART(
+            device=cfg.panel.serial_device,
+            baud=baud,
+            wake_gpio=cfg.panel.wake_gpio,
+            reset_gpio=cfg.panel.reset_gpio,
+            english_font_command=cfg.panel.english_font_command,
+        )
+        print()
+        print(f"--- {label} ---")
+        try:
+            with panel:
+                tx, rx, wake_result = panel.raw_handshake(
+                    wake=use_wake,
+                    strict_wake=use_wake,
+                )
+            print("WAKE:", wake_result[1])
+            print("TX:  ", tx.hex(" ").upper())
+            print("RX:  ", rx.hex(" ").upper() if rx else "<no bytes>")
+            if rx:
+                print("ASCII:", repr(rx.decode("ascii", errors="replace")))
+            if b"OK" in rx:
+                print("RESULT: PASS")
+                found = True
+                break
+            print("RESULT: no OK")
+        except Exception as exc:
+            print(f"RESULT: ERROR: {type(exc).__name__}: {exc}")
+
+    print()
+    print("=== RESULT ===")
+    if found:
+        print("Transport is working.")
+        return
+
+    print("No UART response was received.")
+    print("The command bytes are correct, so check the physical transport next:")
+    print("  panel DOUT -> Pi GPIO15/RX (pin 10)")
+    print("  panel DIN  <- Pi GPIO14/TX (pin 8)")
+    print("  common GND")
+    print("  panel VCC 3.3-5.5 V (current wiring uses Pi 5 V)")
+    print("  panel WAKE_UP -> configured GPIO")
+    print("Observe whether the module state LED lights when the WAKE attempt runs.")
+    raise SystemExit(2)
+
+
 def cmd_display(args):
     cfg = load_config(args.config)
     app = PanelApp(cfg)
@@ -104,6 +207,7 @@ def build_parser():
     preview.set_defaults(func=cmd_preview)
 
     sub.add_parser("probe-epaper").set_defaults(func=cmd_probe)
+    sub.add_parser("diagnose-epaper").set_defaults(func=cmd_diagnose_epaper)
     sub.add_parser("display").set_defaults(func=cmd_display)
     sub.add_parser("daemon").set_defaults(func=cmd_daemon)
     return p
