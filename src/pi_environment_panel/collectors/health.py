@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from pathlib import Path
 from ..models import HealthReading
 
@@ -14,8 +15,18 @@ def _run(cmd, timeout=8):
 
 
 def collect(sense_ok: bool, ups_ok: bool) -> HealthReading:
-    hailo_ok, hailo_out = _run(["/usr/bin/hailortcli", "fw-control", "identify"], timeout=10)
-    hailo_ok = hailo_ok and "Device Architecture: HAILO10H" in hailo_out
+    hailo_ok = False
+    hailo_out = ""
+    for attempt in range(2):
+        rc_ok, hailo_out = _run(
+            ["/usr/bin/hailortcli", "fw-control", "identify"],
+            timeout=10,
+        )
+        hailo_ok = rc_ok and "Device Architecture: HAILO10H" in hailo_out
+        if hailo_ok:
+            break
+        if attempt == 0:
+            time.sleep(0.5)
 
     camera_ok, camera_out = _run(["rpicam-hello", "--list-cameras"], timeout=10)
     camera_ok = camera_ok and "imx500" in camera_out.lower()

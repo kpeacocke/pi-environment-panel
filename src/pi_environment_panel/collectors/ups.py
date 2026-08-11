@@ -28,12 +28,15 @@ def collect(cfg) -> UPSReading:
 
     try:
         from smbus import SMBus
-        with SMBus(cfg.bus) as bus:
+        bus = SMBus(cfg.bus)
+        try:
             vbus_mv = _u16(bus, cfg.address, REG_VBUS_MV)
             battery_mv = _u16(bus, cfg.address, REG_BATTERY_MV)
             current_ma = _s16(bus, cfg.address, REG_BATTERY_CURRENT_MA)
             percent = _u16(bus, cfg.address, REG_BATTERY_PERCENT)
             remaining = _u16(bus, cfg.address, REG_REMAINING_MIN)
+        finally:
+            bus.close()
 
         # Treat 4.0 V as a conservative "external VBUS is present" threshold.
         mains = vbus_mv >= 4000

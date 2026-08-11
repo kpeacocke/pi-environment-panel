@@ -237,3 +237,11 @@ This means layout work can be done without repeatedly refreshing the physical di
 - Fixed `probe-epaper` / normal display handshake sequencing.
 - The driver now tries the already-awake `/dev/ttyAMA10` panel first and only pulses the configured WAKE GPIO if the first handshake fails.
 - This matches the target hardware observation: a direct handshake on `/dev/ttyAMA10` returned `OK` while the module state LED was already on.
+
+## v0.1.5
+
+- Fixed UPS collection to use explicit `SMBus.close()` instead of requiring context-manager support.
+- Kept the Waveshare register mapping at VBUS `0x10/11`, battery voltage `0x20/21`,
+  signed current `0x22/23`, percentage `0x24/25`, and remaining minutes `0x28/29`.
+- Hailo health now retries one transient failed `fw-control identify` before marking the accelerator failed.
+- A repeated Hailo failure remains a real dashboard fault rather than being hidden.
