@@ -106,18 +106,41 @@ class WaveshareUART:
         time.sleep(settle)
 
     def handshake(self) -> bool:
-        self.wake()
+        """Handshake with an already-awake panel first.
+
+        The physical panel on this Pi normally remains awake (state LED on).
+        Toggling WAKE before every command is unnecessary and can interfere
+        with a working UART session if the auxiliary GPIO wiring differs from
+        our assumed WAKE mapping.
+
+        Try the UART exactly as-is first. Only if that receives no OK response
+        do we generate the configured WAKE edge and retry once.
+        """
         if self._serial is None:
             raise RuntimeError("serial device is not open")
-        self._serial.reset_input_buffer()
-        self.send(0x00, settle=0.15)
-        deadline = time.time() + 1.5
-        data = b""
-        while time.time() < deadline:
-            data += self._serial.read(16)
-            if b"OK" in data:
-                return True
-        return False
+
+        def attempt() -> bool:
+            self._serial.reset_input_buffer()
+            self.send(0x00, settle=0.15)
+            deadline = time.monotonic() + 1.5
+            data = bytearray()
+            while time.monotonic() < deadline:
+                waiting = self._serial.in_waiting
+                if waiting:
+                    data.extend(self._serial.read(waiting))
+                    if b"OK" in data:
+                        return True
+                else:
+                    time.sleep(0.02)
+            return False
+
+        # Primary path: the panel is already awake.
+        if attempt():
+            return True
+
+        # Fallback only: try the configured WAKE line, then re-handshake.
+        self.wake()
+        return attempt()
 
     def read_response(self, seconds: float = 1.5) -> bytes:
         if self._serial is None:

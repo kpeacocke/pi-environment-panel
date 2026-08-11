@@ -231,3 +231,9 @@ This means layout work can be done without repeatedly refreshing the physical di
 - The panel's serial TX/RX are on the Pi 5 dedicated UART/debug connector; the 40-pin header is used for auxiliary GPIO such as WAKE and RESET.
 - `/dev/serial0` is no longer used as the default because this machine currently maps it to `/dev/ttyAMA0` on GPIO14/15, which is not where this panel is physically connected.
 - Verified on the target Pi: the Waveshare handshake on `/dev/ttyAMA10` returned ASCII `OK` (`4F 4B`).
+
+## v0.1.4
+
+- Fixed `probe-epaper` / normal display handshake sequencing.
+- The driver now tries the already-awake `/dev/ttyAMA10` panel first and only pulses the configured WAKE GPIO if the first handshake fails.
+- This matches the target hardware observation: a direct handshake on `/dev/ttyAMA10` returned `OK` while the module state LED was already on.
