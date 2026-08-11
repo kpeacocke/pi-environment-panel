@@ -1,0 +1,89 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, asdict
+from typing import Optional, Any
+
+
+@dataclass
+class SenseReading:
+    ok: bool = False
+    temperature_c: Optional[float] = None
+    humidity_pct: Optional[float] = None
+    pressure_hpa: Optional[float] = None
+    dew_point_c: Optional[float] = None
+    error: Optional[str] = None
+
+
+@dataclass
+class UPSReading:
+    ok: bool = False
+    mains: Optional[bool] = None
+    vbus_voltage_v: Optional[float] = None
+    battery_voltage_v: Optional[float] = None
+    battery_current_ma: Optional[int] = None
+    battery_pct: Optional[float] = None
+    remaining_minutes: Optional[int] = None
+    error: Optional[str] = None
+
+
+@dataclass
+class SystemReading:
+    cpu_temp_c: Optional[float] = None
+    cpu_pct: Optional[float] = None
+    ram_pct: Optional[float] = None
+    disk_free_pct: Optional[float] = None
+    disk_free_gb: Optional[float] = None
+    uptime_seconds: Optional[int] = None
+    ip_address: Optional[str] = None
+
+
+@dataclass
+class HealthReading:
+    hailo: Optional[bool] = None
+    camera: Optional[bool] = None
+    sense: Optional[bool] = None
+    ups: Optional[bool] = None
+    dac: Optional[bool] = None
+    docker: Optional[bool] = None
+    ollama: Optional[bool] = None
+    open_webui: Optional[bool] = None
+
+
+@dataclass
+class WeatherReading:
+    ok: bool = False
+    temperature_c: Optional[float] = None
+    humidity_pct: Optional[float] = None
+    pressure_hpa: Optional[float] = None
+    wind_kmh: Optional[float] = None
+    condition: Optional[str] = None
+    today_min_c: Optional[float] = None
+    today_max_c: Optional[float] = None
+    rain_probability_pct: Optional[float] = None
+    stale: bool = False
+    error: Optional[str] = None
+
+
+@dataclass
+class Trends:
+    pressure_1h: Optional[float] = None
+    pressure_6h: Optional[float] = None
+    pressure_24h: Optional[float] = None
+    temperature_6h: Optional[float] = None
+    temperature_24h: Optional[float] = None
+
+
+@dataclass
+class DashboardState:
+    timestamp: str
+    sense: SenseReading
+    ups: UPSReading
+    system: SystemReading
+    health: HealthReading
+    weather: WeatherReading
+    trends: Trends
+    comfort: str = "UNKNOWN"
+    overall: str = "UNKNOWN"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)

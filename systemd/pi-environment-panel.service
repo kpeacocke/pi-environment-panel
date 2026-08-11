@@ -1,0 +1,17 @@
+[Unit]
+Description=Pi Environment Panel
+After=multi-user.target network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kpeacocke
+Group=kpeacocke
+SupplementaryGroups=dialout gpio i2c
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/pi-environment-panel/.venv/bin/pi-panel daemon
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

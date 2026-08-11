@@ -1,0 +1,42 @@
+[panel]
+title = "KP PI"
+serial_device = "/dev/serial0"
+baud = 115200
+wake_gpio = 4
+reset_gpio = 17
+# Waveshare documents 0x1E/0x1F depending on firmware revision.
+english_font_command = 30
+sample_seconds = 60
+refresh_seconds = 300
+health_seconds = 600
+history_days = 90
+state_dir = "/var/lib/pi-environment-panel"
+nvme_path = "/mnt/nvme"
+
+[sense]
+enabled = true
+temperature_offset_c = 0.0
+pressure_retries = 6
+pressure_retry_seconds = 0.25
+
+[ups]
+enabled = true
+bus = 1
+address = 45
+
+[weather]
+enabled = false
+latitude = 0.0
+longitude = 0.0
+timezone = "Australia/Sydney"
+cache_seconds = 900
+
+[thresholds]
+room_cold_c = 18.0
+room_warm_c = 27.0
+humidity_dry_pct = 30.0
+humidity_humid_pct = 65.0
+pressure_trend_hpa_6h = 1.5
+cpu_hot_c = 75.0
+disk_low_free_pct = 10.0
+ups_low_pct = 20.0
