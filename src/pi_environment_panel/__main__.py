@@ -22,6 +22,16 @@ def _epaper(cfg):
     )
 
 
+def cmd_gps(args):
+    from dataclasses import asdict
+    from .collectors.gps import collect
+    cfg = load_config(args.config)
+    result = collect(cfg.gps)
+    print(json.dumps(asdict(result), indent=2))
+    if not result.ok:
+        raise SystemExit(2)
+
+
 def cmd_snapshot(args):
     cfg = load_config(args.config)
     app = PanelApp(cfg)
@@ -81,7 +91,11 @@ def cmd_diagnose_epaper(args):
 
     print()
     print("=== UART OWNERSHIP ===")
-    cmdline = Path("/proc/cmdline").read_text(errors="ignore").strip()
+    try:
+        cmdline = Path("/proc/cmdline").read_text(errors="ignore").strip()
+    except OSError:
+        cmdline = ""
+        print("Kernel command line unavailable on this host")
     serial_console = [x for x in cmdline.split() if x.startswith("console=serial") or "ttyAMA" in x or "ttyS" in x]
     print("serial console:", " ".join(serial_console) if serial_console else "none in /proc/cmdline")
 
@@ -184,9 +198,16 @@ def cmd_daemon(args):
                 with _epaper(cfg) as panel:
                     if panel.handshake():
                         panel.execute(plan)
+                        print(f"e-paper commands sent: {state.timestamp}", flush=True)
+                        status_path = Path(cfg.panel.state_dir) / "display-status.json"
+                        status_path.write_text(json.dumps({"commands_sent_at": state.timestamp, "handshake_ok": True}))
                         last_refresh = time.monotonic()
                         last_overall = state.overall
                     else:
+                        status_path = Path(cfg.panel.state_dir) / "display-status.json"
+                        status_path.write_text(json.dumps({"attempted_at": state.timestamp,
+                                                          "handshake_ok": False,
+                                                          "error": "No OK response; drawing not sent"}))
                         print("WARN: e-paper handshake failed", flush=True)
         except Exception as exc:
             print(f"ERROR: {exc}", flush=True)
@@ -200,6 +221,7 @@ def build_parser():
     p.add_argument("--config", help="Config TOML path")
     sub = p.add_subparsers(dest="command", required=True)
 
+    sub.add_parser("gps").set_defaults(func=cmd_gps)
     sub.add_parser("snapshot").set_defaults(func=cmd_snapshot)
 
     preview = sub.add_parser("preview")

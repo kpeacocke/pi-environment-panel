@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Optional, Any
 
 
@@ -50,6 +50,16 @@ class HealthReading:
 
 
 @dataclass
+class GPSReading:
+    ok: bool = False
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    fix_time: Optional[str] = None
+    age_seconds: Optional[float] = None
+    error: Optional[str] = None
+
+
+@dataclass
 class WeatherReading:
     ok: bool = False
     temperature_c: Optional[float] = None
@@ -84,6 +94,7 @@ class DashboardState:
     trends: Trends
     comfort: str = "UNKNOWN"
     overall: str = "UNKNOWN"
+    gps: GPSReading = field(default_factory=GPSReading)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -11,6 +11,7 @@ from .collectors import ups as ups_collector
 from .collectors import system as system_collector
 from .collectors import health as health_collector
 from .collectors import weather as weather_collector
+from .collectors import gps as gps_collector
 from .derive import comfort_label, overall_status
 from .store import HistoryStore
 
@@ -26,7 +27,8 @@ class PanelApp:
         sense = sense_collector.collect(self.cfg.sense)
         ups = ups_collector.collect(self.cfg.ups)
         system = system_collector.collect(self.cfg.panel.nvme_path)
-        weather = weather_collector.collect(self.cfg.weather, self.cfg.panel.state_dir)
+        gps = gps_collector.collect(self.cfg.gps)
+        weather = weather_collector.collect(self.cfg.weather, self.cfg.panel.state_dir, gps)
 
         now = time.monotonic()
         if force_health or self._health is None or now - self._health_at >= self.cfg.panel.health_seconds:
@@ -46,6 +48,7 @@ class PanelApp:
             health=health,
             weather=weather,
             trends=Trends(),
+            gps=gps,
         )
         state.comfort = comfort_label(
             sense.temperature_c,

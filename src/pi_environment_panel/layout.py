@@ -98,7 +98,10 @@ def build_plan(state, cfg) -> DisplayPlan:
             32,
         )
     else:
-        p.text(20, 202, "OUTSIDE WEATHER DISABLED / UNAVAILABLE", 32)
+        label = "OUTSIDE WEATHER DISABLED / UNAVAILABLE"
+        if state.weather.error and state.weather.error.startswith("GPS"):
+            label = "OUTSIDE: WAITING FOR GPS FIX"
+        p.text(20, 202, label, 32)
 
     p.line(15, 306, 785, 306)
 

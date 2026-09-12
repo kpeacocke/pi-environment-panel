@@ -31,3 +31,10 @@ dashboard.png
 *.db
 *.log
 tmp/
+
+# GNSS / weather location and local configuration
+config.local.toml
+latest.json
+weather.json
+display-status.json
+.lgd-nfy*

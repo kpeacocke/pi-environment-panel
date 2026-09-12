@@ -8,6 +8,7 @@ Type=simple
 User=kpeacocke
 Group=kpeacocke
 SupplementaryGroups=dialout gpio i2c
+WorkingDirectory=/var/lib/pi-environment-panel
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/opt/pi-environment-panel/.venv/bin/pi-panel daemon
 Restart=on-failure

@@ -31,9 +31,9 @@ def u16(value: int) -> bytes:
 class WaveshareUART:
     def __init__(
         self,
-        device="/dev/serial0",
+        device="/dev/ttyAMA10",
         baud=115200,
-        wake_gpio=4,
+        wake_gpio=22,
         reset_gpio=17,
         english_font_command=0x1E,
     ):
@@ -46,7 +46,7 @@ class WaveshareUART:
 
     def open(self):
         import serial
-        self._serial = serial.Serial(self.device, self.baud, timeout=0.15)
+        self._serial = serial.Serial(self.device, self.baud, timeout=0.15, write_timeout=2.0, exclusive=True)
         return self
 
     def close(self):

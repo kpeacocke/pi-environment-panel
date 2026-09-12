@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import math
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 import urllib.parse
 import urllib.request
@@ -59,24 +62,36 @@ def _parse(data, stale=False):
     )
 
 
-def collect(cfg, state_dir: str) -> WeatherReading:
+def collect(cfg, state_dir: str, gps=None) -> WeatherReading:
     if not cfg.enabled:
         return WeatherReading(error="disabled")
 
+    latitude, longitude = cfg.latitude, cfg.longitude
+    if cfg.location_source == "gps":
+        if gps is None or not gps.ok:
+            return WeatherReading(error=gps.error if gps else "GPS waiting for fix")
+        latitude, longitude = gps.latitude, gps.longitude
+    if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in (latitude, longitude)) or not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return WeatherReading(error="Invalid weather coordinates")
+    # Approximately 1 km cells: avoid refetching for GPS jitter, but invalidate
+    # the cache when the deck moves, the local day changes or timezone changes.
+    location_key = [round(latitude, 2), round(longitude, 2), cfg.timezone,
+                    datetime.now(ZoneInfo(cfg.timezone)).date().isoformat()]
+    cache = None
     cache_path = Path(state_dir) / "weather.json"
     cache_path.parent.mkdir(parents=True, exist_ok=True)
 
     if cache_path.exists():
         try:
             cache = json.loads(cache_path.read_text())
-            if time.time() - cache["_fetched_at"] < cfg.cache_seconds:
+            if cache.get("_location") == location_key and 0 <= time.time() - cache["_fetched_at"] < cfg.cache_seconds:
                 return _parse(cache["data"])
         except Exception:
             pass
 
     query = {
-        "latitude": cfg.latitude,
-        "longitude": cfg.longitude,
+        "latitude": latitude,
+        "longitude": longitude,
         "timezone": cfg.timezone,
         "current": ",".join([
             "temperature_2m",
@@ -95,12 +110,14 @@ def collect(cfg, state_dir: str) -> WeatherReading:
         req = urllib.request.Request(url, headers={"User-Agent": "pi-environment-panel/0.1"})
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.load(response)
-        cache_path.write_text(json.dumps({"_fetched_at": time.time(), "data": data}))
+        cache_path.write_text(json.dumps({"_fetched_at": time.time(), "_location": location_key, "data": data}))
         return _parse(data)
     except Exception as exc:
         if cache_path.exists():
             try:
                 cache = json.loads(cache_path.read_text())
+                if cache.get("_location") != location_key or not 0 <= time.time() - cache["_fetched_at"] <= cfg.max_stale_seconds:
+                    raise ValueError("No recent weather cache for this location")
                 result = _parse(cache["data"], stale=True)
                 result.error = str(exc)
                 return result

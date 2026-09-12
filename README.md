@@ -58,12 +58,12 @@ Current known wiring:
 
 | Function | Pi |
 |---|---|
-| Panel VCC | 5V pin 4 |
+| Panel VCC (red) | 3.3V pin 17 |
 | Panel GND | GND |
 | Panel serial | Raspberry Pi 5 dedicated UART/debug connector |
 | UART device | `/dev/ttyAMA10`, 115200 baud |
-| WAKE_UP | GPIO4, pin 7 |
-| RESET | GPIO17, pin 11 |
+| WAKE_UP (yellow) | GPIO22, pin 15 |
+| RESET (blue) | GPIO17, pin 11 |
 | UPS HAT (E) | I²C bus 1, address `0x2d` |
 
 ## Install
@@ -86,25 +86,55 @@ The installer:
 
 It does **not** overwrite an existing config.
 
-## Configure weather
+## GPS and local weather
 
-Edit:
+The deck has a SIMCOM SIM7600NA-H modem on **`/dev/ttyAMA0`**, using
+GPIO14/15 (header pins 8/10). E-paper uses **`/dev/ttyAMA10`** on the dedicated
+3-pin connector. Do not use `/dev/serial0` for the modem: after reboot it was
+observed pointing at `ttyAMA10`. GPS and e-paper must never share a port.
 
-```bash
-sudo nano /etc/pi-environment-panel/config.toml
-```
-
-Set your desired weather coordinate and enable weather:
+The example configuration enables GPS-based weather:
 
 ```toml
+[gps]
+enabled = true
+serial_device = "/dev/ttyAMA0"
+baud = 115200
+auto_enable = true
+timeout_seconds = 2.0
+max_age_seconds = 120.0
+
 [weather]
 enabled = true
-latitude = -33.0000
-longitude = 151.0000
+location_source = "gps"
 timezone = "Australia/Sydney"
+cache_seconds = 900
+max_stale_seconds = 3600
 ```
 
-The project deliberately does not guess the Pi's location.
+`pi-panel gps` reports fix status and coordinates (exit 2 without a usable fix).
+The collector checks `AT+CGPS?`, enables the GNSS engine with `AT+CGPS=1` if off,
+and reads `AT+CGPSINFO`. Queries are bounded and use exclusive serial access;
+don't run another modem/AT client concurrently. No SIM or cellular data connection
+is needed for standalone GNSS; weather uses the Pi's existing internet connection.
+Connect the GNSS antenna and provide a clear sky view for a fix.
+
+Coordinates are converted from degrees/minutes, with southern and western signs,
+and checked against UTC fix time. Missing, malformed or stale fixes result in
+unavailable weather, never an implicit 0,0 request or a previous location's forecast.
+The Pi clock must be correct. No last-location fallback is used. Once a fix arrives,
+the next sampling cycle supplies coordinates to Open-Meteo automatically.
+
+The weather cache is keyed by approximately 1 km coordinate cells, local date and
+timezone. Fresh data is cached for 15 minutes; during an API failure, matching data
+may be shown as STALE for at most one hour. Movement or a missing GPS fix prevents
+reuse of another location's weather. GPS coordinates are sent to Open-Meteo to
+retrieve the forecast and saved in local runtime state; do not commit runtime files.
+For a fixed installation, `location_source = "static"` uses explicitly configured
+`latitude` and `longitude` instead.
+
+References: [SIMCom GNSS application note](https://files.waveshare.com/upload/e/e1/SIM7500_SIM7600_Series_GNSS_Application_Note_V2.00.pdf),
+[Open-Meteo API](https://open-meteo.com/en/docs).
 
 ## First run
 
@@ -245,3 +275,25 @@ This means layout work can be done without repeatedly refreshing the physical di
   signed current `0x22/23`, percentage `0x24/25`, and remaining minutes `0x28/29`.
 - Hailo health now retries one transient failed `fw-control identify` before marking the accelerator failed.
 - A repeated Hailo failure remains a real dashboard fault rather than being hidden.
+
+## September 2026 deployment findings
+
+User-confirmed auxiliary wiring: red → 3.3V/header pin 17; yellow WAKE →
+GPIO22/header pin 15; blue RESET → GPIO17/header pin 11. Cable colours at the
+Pi UART adapter must be mapped by connector signals, not assumed to match the
+display harness. Pi UART pin 1 RX ← display DOUT; pin 2 GND ↔ display GND;
+pin 3 TX → display DIN.
+
+The systemd working directory must be writable by the service user because lgpio
+creates notification FIFOs there. Both installer and unit now set
+`WorkingDirectory=/var/lib/pi-environment-panel`. Earlier source edits were not
+necessarily installed: after changes, rebuild/install into the service venv.
+
+A restart was reported to restore the visible dashboard, but a subsequent live
+inspection again found repeated failed handshakes and zero UART10 RX bytes since
+boot. That does not establish a root cause or prove continuous refresh. The daemon
+now logs successful command sends and writes `display-status.json` separately from
+sensor `latest.json`. Handshake failure remains a failure; it is not hidden by
+bypassing the handshake. `commands_sent_at` is not a visual acknowledgement from
+the screen. The serial cable, electrical continuity and power stability remain
+possible causes until a current successful exchange is observed.

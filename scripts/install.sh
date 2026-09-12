@@ -47,6 +47,7 @@ Type=simple
 User=$SERVICE_USER
 Group=$SERVICE_USER
 SupplementaryGroups=dialout gpio i2c
+WorkingDirectory=/var/lib/pi-environment-panel
 Environment=PYTHONUNBUFFERED=1
 ExecStart=$APP_DIR/.venv/bin/pi-panel daemon
 Restart=on-failure

@@ -2,7 +2,7 @@
 title = "KP PI"
 serial_device = "/dev/ttyAMA10"
 baud = 115200
-wake_gpio = 4
+wake_gpio = 22
 reset_gpio = 17
 # Waveshare documents 0x1E/0x1F depending on firmware revision.
 english_font_command = 30
@@ -25,11 +25,13 @@ bus = 1
 address = 45
 
 [weather]
-enabled = false
+enabled = true
+location_source = "gps"
 latitude = 0.0
 longitude = 0.0
 timezone = "Australia/Sydney"
 cache_seconds = 900
+max_stale_seconds = 3600
 
 [thresholds]
 room_cold_c = 18.0
@@ -40,3 +42,11 @@ pressure_trend_hpa_6h = 1.5
 cpu_hot_c = 75.0
 disk_low_free_pct = 10.0
 ups_low_pct = 20.0
+
+[gps]
+enabled = true
+serial_device = "/dev/ttyAMA0"
+baud = 115200
+auto_enable = true
+timeout_seconds = 2.0
+max_age_seconds = 120.0
