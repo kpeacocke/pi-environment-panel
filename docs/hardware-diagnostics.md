@@ -1,4 +1,23 @@
-# Live hardware diagnosis — 12 September 2026
+# Live hardware diagnosis — 12–13 September 2026
+
+## Working display confirmed — 13 September, 08:43 AEST
+
+A read-only SSH capture confirmed the user's report of live display updates.
+The running 0.1.6 service uses `/dev/ttyAMA10` at 115200, WAKE GPIO22 and
+RESET GPIO17. Its journal records successful command sends at 08:35:54 and
+08:42:53. A failed handshake at 08:41:51 recovered on the next attempt.
+`display-status.json` reports `handshake_ok: true` for the 08:42:47 sample.
+UART10 counters were TX 1457, RX 124; the boot began around 08:35.
+No service restart, serial probe, GPIO change or reboot was performed during
+this capture. Software handshake/send evidence and the user's visible updates
+establish a working display path. They do not establish why earlier attempts
+failed or prove a cable fault.
+
+The GPS collector still reports `GPS waiting for fix`; local weather consequently
+remains unavailable. The modem uses the separate `/dev/ttyAMA0` port. This is
+independent of the now-confirmed working display connection.
+
+The failure observations below are historical, not the current display state.
 
 ## Confirmed software and port separation
 
@@ -65,8 +84,8 @@ be called valid acknowledgements.
 
 This rules out treating reboot as a verified lasting fix. It does not establish
 which conductor or component is faulty. The dedicated UART path and runtime
-settings are confirmed; an end-to-end electrical check is still required to
-separate cable continuity/pin mapping, ground/power integrity and controller failure.
+settings are confirmed; the cause remained unresolved at that time. Later successful exchanges are
+recorded above; they do not justify attributing the earlier failures to wiring.
 Do not rewire based solely on adapter wire colours or an obscured photograph.
 
 Both the dashboard service and GPS polling were restored after testing. Existing
