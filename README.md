@@ -297,3 +297,7 @@ sensor `latest.json`. Handshake failure remains a failure; it is not hidden by
 bypassing the handshake. `commands_sent_at` is not a visual acknowledgement from
 the screen. The serial cable, electrical continuity and power stability remain
 possible causes until a current successful exchange is observed.
+
+See [the live hardware diagnosis](docs/hardware-diagnostics.md) for the raw GNSS
+no-fix reports, cold-start test and unsuccessful display recovery after a controlled
+reboot. These distinguish verified settings from unresolved electrical causes.
