@@ -141,6 +141,11 @@ def build_plan(state, cfg) -> DisplayPlan:
     )
 
     p.line(15, 562, 785, 562)
-    p.text(20, 568, state.overall[:42], 32)
+    gps = "GPS FIX" if state.gps.ok else "GPS --"
+    field = (
+        f"HDG {_f(state.sense.heading_deg, '.0f')}  "
+        f"{state.sense.motion}  {gps}  {state.overall}"
+    )
+    p.text(20, 568, field[:48], 32)
 
     return p

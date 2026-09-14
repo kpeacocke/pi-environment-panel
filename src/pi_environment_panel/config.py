@@ -31,6 +31,7 @@ class SenseConfig:
     temperature_offset_c: float = 0.0
     pressure_retries: int = 6
     pressure_retry_seconds: float = 0.25
+    motion_threshold_g: float = 0.08
 
 
 @dataclass
@@ -111,6 +112,8 @@ def load_config(path: str | Path | None = None) -> Config:
 
     if cfg.weather.location_source not in {"static", "gps"}:
         raise ValueError("weather.location_source must be static or gps")
+    if cfg.sense.motion_threshold_g < 0:
+        raise ValueError("sense.motion_threshold_g must be non-negative")
     if cfg.gps.enabled:
         if Path(cfg.gps.serial_device).resolve() == Path(cfg.panel.serial_device).resolve():
             raise ValueError("GPS and e-paper must use different UART devices")
