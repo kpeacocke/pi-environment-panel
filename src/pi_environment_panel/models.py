@@ -12,6 +12,18 @@ class SenseReading:
     pressure_hpa: Optional[float] = None
     dew_point_c: Optional[float] = None
     error: Optional[str] = None
+    heading_deg: Optional[float] = None
+    pitch_deg: Optional[float] = None
+    roll_deg: Optional[float] = None
+    yaw_deg: Optional[float] = None
+    accel_x_g: Optional[float] = None
+    accel_y_g: Optional[float] = None
+    accel_z_g: Optional[float] = None
+    gyro_x_rads: Optional[float] = None
+    gyro_y_rads: Optional[float] = None
+    gyro_z_rads: Optional[float] = None
+    movement_g: Optional[float] = None
+    motion: str = "UNKNOWN"
 
 
 @dataclass

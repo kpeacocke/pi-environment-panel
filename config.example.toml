@@ -18,6 +18,8 @@ enabled = true
 temperature_offset_c = 0.0
 pressure_retries = 6
 pressure_retry_seconds = 0.25
+# Difference from 1 g above which the deck is considered to be moving.
+motion_threshold_g = 0.08
 
 [ups]
 enabled = true
