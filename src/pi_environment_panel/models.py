@@ -11,6 +11,7 @@ class SenseReading:
     humidity_pct: Optional[float] = None
     pressure_hpa: Optional[float] = None
     dew_point_c: Optional[float] = None
+    error: Optional[str] = None
     heading_deg: Optional[float] = None
     pitch_deg: Optional[float] = None
     roll_deg: Optional[float] = None
@@ -23,7 +24,6 @@ class SenseReading:
     gyro_z_rads: Optional[float] = None
     movement_g: Optional[float] = None
     motion: str = "UNKNOWN"
-    error: Optional[str] = None
 
 
 @dataclass
