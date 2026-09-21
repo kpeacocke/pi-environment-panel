@@ -58,7 +58,7 @@ def collect(cfg) -> SenseReading:
             gyro_y_rads=float(gyro.get("y", 0.0)),
             gyro_z_rads=float(gyro.get("z", 0.0)),
             movement_g=movement,
-            motion="MOVING" if movement >= cfg.motion_threshold_g else "STATIONARY",
+            motion="MOVING" if movement > cfg.motion_threshold_g else "STATIONARY",
         )
     except Exception as exc:
         return SenseReading(ok=False, error=str(exc))
